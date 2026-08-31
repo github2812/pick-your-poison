@@ -5,77 +5,111 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pick Your Poison | The Alchemist's Trial</title>
+    <title>Pick Your Poison</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style is:global>
       :root {
-        --bg: #09070e;
-        --card-bg: rgba(22, 17, 34, 0.75);
-        --border-glass: rgba(168, 85, 247, 0.2);
         --gold: #f59e0b;
-        --purple-glow: #a855f7;
-        --green-safe: #10b981;
-        --red-poison: #ef4444;
+        --parchment: #fffbeb;
+        --parchment-border: #78350f;
+        --ink: #1a0f02;
       }
 
       * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        padding: 2rem 1rem;
-        background: radial-gradient(circle at 50% 10%, #1e1338 0%, var(--bg) 70%);
+        padding: 1.5rem 1rem;
+        min-height: 100vh;
         color: #e5e7eb;
         font-family: 'Plus Jakarta Sans', sans-serif;
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
-        overflow-x: hidden;
+        justify-content: center;
+        background-color: #0b0813;
+        background-image: 
+          radial-gradient(ellipse at 50% 15%, rgba(168, 85, 247, 0.3) 0%, transparent 60%),
+          radial-gradient(circle at 10% 80%, rgba(16, 185, 129, 0.15) 0%, transparent 40%),
+          radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+          linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
       }
 
-      /* Game Header & Stats */
+      /* Header & Controls */
       .header-container {
         text-align: center;
-        max-width: 650px;
-        margin-bottom: 2rem;
+        max-width: 680px;
+        margin-bottom: 0.75rem;
       }
 
       h1 {
         font-family: 'Cinzel', serif;
-        font-size: 2.75rem;
+        font-size: 2.3rem;
         font-weight: 900;
-        letter-spacing: 2px;
-        margin: 0 0 0.5rem 0;
-        background: linear-gradient(135deg, #fff 30%, #c084fc 100%);
+        letter-spacing: 3px;
+        margin: 0;
+        background: linear-gradient(135deg, #ffffff 40%, #c084fc 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 30px rgba(192, 132, 252, 0.3);
+        filter: drop-shadow(0 0 15px rgba(192, 132, 252, 0.4));
       }
 
       .subtitle {
         color: #9ca3af;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        margin: 0 0 1.5rem 0;
+        font-size: 0.9rem;
+        margin: 0.25rem 0 0.75rem 0;
+      }
+
+      /* Difficulty Pill Selector */
+      .difficulty-bar {
+        display: inline-flex;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(168, 85, 247, 0.35);
+        border-radius: 999px;
+        padding: 0.25rem;
+        gap: 0.3rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .diff-btn {
+        background: transparent;
+        color: #9ca3af;
+        border: none;
+        font-family: 'Cinzel', serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .diff-btn.active {
+        background: #9333ea;
+        color: #fff;
+        box-shadow: 0 0 14px rgba(147, 51, 234, 0.6);
       }
 
       .scoreboard {
         display: inline-flex;
-        gap: 2rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border-glass);
-        padding: 0.6rem 1.8rem;
+        gap: 1.75rem;
+        background: rgba(18, 14, 28, 0.85);
+        border: 1px solid rgba(168, 85, 247, 0.35);
+        padding: 0.35rem 1.5rem;
         border-radius: 999px;
-        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
       }
 
       .stat-item {
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         text-transform: uppercase;
         letter-spacing: 1px;
-        color: #a1a1aa;
+        color: #9ca3af;
       }
 
       .stat-value {
@@ -83,233 +117,254 @@
         font-size: 1.1rem;
         font-weight: 700;
         color: var(--gold);
-        margin-left: 0.3rem;
+        margin-left: 0.35rem;
       }
 
-      /* Alchemist Shelf */
-      .shelf-wrapper {
-        width: 100%;
-        max-width: 950px;
-        position: relative;
-        margin-top: 1rem;
-      }
-
-      .shelf-base {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 14px;
-        background: linear-gradient(180deg, #2e263d 0%, #15111c 100%);
-        border-radius: 4px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(168, 85, 247, 0.15);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 1;
-      }
-
-      .bottles-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        padding-bottom: 14px;
-        position: relative;
-        z-index: 2;
-      }
-
-      /* Potion Card */
-      .vial-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border-glass);
-        border-radius: 16px 16px 0 0;
-        padding: 1.75rem 1.25rem;
-        cursor: pointer;
+      /* Shelf Stage */
+      .shelf-stage {
         display: flex;
         flex-direction: column;
         align-items: center;
-        text-align: center;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        backdrop-filter: blur(12px);
-        position: relative;
-        overflow: hidden;
+        margin-top: 0.5rem;
+        width: 100%;
+        max-width: 860px;
       }
 
-      .vial-card::before {
-        content: '';
+      .bottles-row {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 1.25rem;
+        z-index: 2;
+        flex-wrap: nowrap;
+      }
+
+      /* Bottle Item & Swap Animation */
+      .bottle-unit {
+        position: relative !important;
+        width: 180px !important;
+        height: 280px !important;
+        flex: 0 0 180px !important;
+        cursor: pointer;
+        user-select: none;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation: bottlePopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+
+      .bottle-unit:hover {
+        transform: translateY(-10px) scale(1.03);
+      }
+
+      .bottle-svg {
+        width: 180px !important;
+        height: 280px !important;
+        display: block;
+        filter: drop-shadow(0 0 18px var(--bottle-glow));
+      }
+
+      /* High-Readability Parchment Label */
+      .parchment-label {
         position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 50% 30%, rgba(168, 85, 247, 0.15), transparent 70%);
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-
-      .vial-card:hover {
-        transform: translateY(-8px);
-        border-color: rgba(192, 132, 252, 0.6);
-        box-shadow: 0 12px 30px rgba(168, 85, 247, 0.25);
-      }
-
-      .vial-card:hover::before {
-        opacity: 1;
-      }
-
-      /* Flask SVG Graphic */
-      .flask-svg {
-        width: 85px;
-        height: 110px;
-        filter: drop-shadow(0 0 12px var(--glow-color, rgba(168, 85, 247, 0.4)));
-        transition: transform 0.3s ease;
-      }
-
-      .vial-card:hover .flask-svg {
-        transform: scale(1.06);
-      }
-
-      .vial-id-badge {
-        font-family: 'Cinzel', serif;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #d8b4fe;
-        background: rgba(168, 85, 247, 0.15);
-        border: 1px solid rgba(168, 85, 247, 0.3);
-        padding: 0.2rem 0.6rem;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -15%);
+        width: 86%;
+        background: var(--parchment);
+        background-image: radial-gradient(circle, #ffffff 40%, #fde68a 100%);
+        border: 2px solid var(--parchment-border);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.85), inset 0 0 10px rgba(120, 53, 15, 0.2);
         border-radius: 6px;
-        margin-top: 1rem;
-        letter-spacing: 1px;
-      }
-
-      .vial-name {
-        font-family: 'Cinzel', serif;
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #faf5ff;
-        margin: 0.6rem 0 0.8rem 0;
-      }
-
-      .inscription-box {
-        font-size: 0.9rem;
-        font-style: italic;
-        color: #cbd5e1;
-        line-height: 1.5;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px dashed rgba(255, 255, 255, 0.1);
-        padding: 0.75rem;
-        border-radius: 8px;
-        width: 100%;
-      }
-
-      /* Feedback & Results Modal/Banner */
-      .result-banner {
-        max-width: 650px;
-        width: 100%;
-        margin-top: 2rem;
-        padding: 1.25rem 1.75rem;
-        border-radius: 12px;
-        display: none;
-        animation: slideUp 0.3s ease forwards;
+        padding: 0.6rem 0.5rem;
+        z-index: 5;
         text-align: center;
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        pointer-events: none;
+      }
+
+      .potion-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+        border-bottom: 1.5px solid rgba(120, 53, 15, 0.35);
+        padding-bottom: 0.25rem;
+      }
+
+      .potion-id-tag {
+        font-family: 'Cinzel', serif;
+        font-size: 0.72rem;
+        font-weight: 900;
+        color: #fff;
+        background: #78350f;
+        padding: 0.1rem 0.35rem;
+        border-radius: 3px;
+        line-height: 1;
+      }
+
+      .potion-title {
+        font-family: 'Cinzel', serif;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.3px;
+        line-height: 1.15;
+        color: #451a03;
+      }
+
+      .potion-inscription {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
+        font-size: 0.82rem;
+        line-height: 1.35;
+        color: #1a0f02;
+      }
+
+      /* Shelf Ledge */
+      .shelf-ledge {
+        width: 104%;
+        min-width: 580px;
+        height: 18px;
+        background: linear-gradient(180deg, #5c3a21 0%, #2b180a 100%);
+        border-top: 2px solid #8e5b34;
+        border-radius: 4px;
+        box-shadow: 0 14px 28px rgba(0,0,0,0.9);
+        position: relative;
+        z-index: 1;
+      }
+
+      .bracket-left, .bracket-right {
+        position: absolute;
+        top: 18px;
+        width: 16px;
+        height: 28px;
+        background: linear-gradient(90deg, #374151 0%, #111827 100%);
+        border-radius: 0 0 4px 4px;
+      }
+      .bracket-left { left: 45px; }
+      .bracket-right { right: 45px; }
+
+      /* Results Banner & Button */
+      .result-banner {
+        max-width: 560px;
+        width: 100%;
+        margin-top: 1.25rem;
+        padding: 0.85rem 1.25rem;
+        border-radius: 8px;
+        display: none;
+        text-align: center;
+        backdrop-filter: blur(8px);
       }
 
       .result-banner.correct {
-        background: rgba(16, 185, 129, 0.12);
-        border: 1px solid rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.18);
+        border: 1px solid rgba(16, 185, 129, 0.5);
         color: #6ee7b7;
       }
 
       .result-banner.wrong {
-        background: rgba(239, 68, 68, 0.12);
-        border: 1px solid rgba(239, 68, 68, 0.4);
+        background: rgba(239, 68, 68, 0.18);
+        border: 1px solid rgba(239, 68, 68, 0.5);
         color: #fca5a5;
       }
 
       .result-title {
         font-family: 'Cinzel', serif;
-        font-size: 1.3rem;
-        font-weight: 700;
-        margin-bottom: 0.4rem;
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
       }
 
       .result-desc {
-        font-size: 0.95rem;
-        color: #e5e7eb;
-        line-height: 1.5;
+        font-size: 0.88rem;
+        color: #f3f4f6;
+        line-height: 1.4;
       }
 
       #next-btn {
-        margin-top: 1.5rem;
-        padding: 0.85rem 2.2rem;
+        margin-top: 0.85rem;
+        padding: 0.6rem 2rem;
         background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
         color: white;
         font-family: 'Cinzel', serif;
-        font-size: 1rem;
-        font-weight: 700;
+        font-size: 0.9rem;
+        font-weight: 800;
         letter-spacing: 1px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 6px;
         cursor: pointer;
-        box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
-        transition: all 0.2s;
+        box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
         display: none;
+        transition: transform 0.15s;
       }
 
       #next-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(168, 85, 247, 0.6);
       }
 
-      /* Loader */
       .cauldron-loader {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 300px;
-        gap: 1rem;
+        height: 280px;
+        gap: 0.85rem;
       }
 
       .spinner {
-        width: 45px;
-        height: 45px;
+        width: 36px;
+        height: 36px;
         border: 3px solid rgba(168, 85, 247, 0.2);
         border-top-color: #c084fc;
         border-radius: 50%;
-        animation: spin 0.9s linear infinite;
+        animation: spin 0.8s linear infinite;
       }
 
       @keyframes spin { to { transform: rotate(360deg); } }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
+      @keyframes bottlePopIn {
+        0% { opacity: 0; transform: translateY(20px) scale(0.85); }
+        70% { transform: translateY(-6px) scale(1.04); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
       }
 
-      @media (max-width: 768px) {
-        .bottles-grid { grid-template-columns: 1fr; gap: 1rem; }
-        .vial-card { border-radius: 12px; }
-        .shelf-base { display: none; }
-        h1 { font-size: 2.1rem; }
+      @media (max-width: 760px) {
+        .bottles-row { flex-wrap: wrap !important; gap: 1rem; }
+        .shelf-ledge { display: none; }
       }
     </style>
   </head>
   <body>
     <div class="header-container">
       <h1>PICK YOUR POISON</h1>
-      <p class="subtitle">
-        Two tinctures speak absolute truth. One draught contains lethal poison and tells a lie. Identify and neutralize the lie.
-      </p>
+      <p class="subtitle">Only one bottle lies (the poison). Deduce and click the lie!</p>
+
+      <div class="difficulty-bar">
+        <button class="diff-btn" data-diff="easy">Apprentice (2)</button>
+        <button class="diff-btn active" data-diff="medium">Apothecary (3)</button>
+        <button class="diff-btn" data-diff="hard">Grandmaster (4)</button>
+      </div>
       
-      <div class="scoreboard">
-        <div class="stat-item">Streak <span class="stat-value" id="current-streak">0</span></div>
-        <div class="stat-item">Record <span class="stat-value" id="best-streak">0</span></div>
+      <div>
+        <div class="scoreboard">
+          <div class="stat-item">Streak <span class="stat-value" id="current-streak">0</span></div>
+          <div class="stat-item">Record <span class="stat-value" id="best-streak">0</span></div>
+        </div>
       </div>
     </div>
 
-    <div class="shelf-wrapper">
+    <div class="shelf-stage">
       <div id="shelf-content">
         <div class="cauldron-loader">
           <div class="spinner"></div>
-          <span style="font-family: 'Cinzel', serif; color: #a1a1aa; letter-spacing: 1px;">Brewing Concoctions...</span>
+          <span style="font-family: 'Cinzel', serif; color: #a1a1aa; font-size: 0.9rem;">Brewing Concoctions...</span>
         </div>
       </div>
-      <div class="shelf-base"></div>
+      <div class="shelf-ledge">
+        <div class="bracket-left"></div>
+        <div class="bracket-right"></div>
+      </div>
     </div>
 
     <div id="result-banner" class="result-banner">
@@ -317,10 +372,9 @@
       <div id="result-desc" class="result-desc"></div>
     </div>
 
-    <button id="next-btn">Brew Next Batch</button>
+    <button id="next-btn">Next Concoction</button>
 
     <script>
-      // Sound Synthesizer via Web Audio API (Zero downloads needed)
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       function playTone(freq: number, type: OscillatorType, duration: number, delay = 0) {
@@ -330,7 +384,7 @@
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
@@ -341,55 +395,71 @@
       }
 
       function playSuccessSound() {
-        playTone(523.25, 'sine', 0.15, 0);       // C5
-        playTone(659.25, 'sine', 0.15, 0.1);     // E5
-        playTone(783.99, 'sine', 0.35, 0.2);     // G5
-        playTone(1046.50, 'triangle', 0.5, 0.3); // C6
+        playTone(523.25, 'sine', 0.12, 0);
+        playTone(659.25, 'sine', 0.12, 0.08);
+        playTone(783.99, 'sine', 0.25, 0.16);
+        playTone(1046.50, 'triangle', 0.4, 0.24);
       }
 
       function playFailSound() {
-        playTone(311.13, 'sawtooth', 0.2, 0);     // Eb4
-        playTone(293.66, 'sawtooth', 0.4, 0.15);  // D4
-        playTone(207.65, 'sawtooth', 0.6, 0.3);   // G#3
+        playTone(311.13, 'sawtooth', 0.2, 0);
+        playTone(293.66, 'sawtooth', 0.3, 0.12);
+        playTone(207.65, 'sawtooth', 0.45, 0.24);
       }
 
-      // Bottle SVG Color Themes (Emerald, Amethyst, Amber)
-      const THEMES = [
-        { color: '#10b981', glow: 'rgba(16, 185, 129, 0.4)', grad1: '#34d399', grad2: '#065f46' },
-        { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.4)', grad1: '#c084fc', grad2: '#581c87' },
-        { color: '#f59e0b', glow: 'rgba(245, 158, 11, 0.4)', grad1: '#fbbf24', grad2: '#78350f' }
+      const COLOR_THEMES = [
+        { glow: 'rgba(16, 185, 129, 0.45)', grad1: '#34d399', grad2: '#064e3b' },
+        { glow: 'rgba(168, 85, 247, 0.45)', grad1: '#c084fc', grad2: '#581c87' },
+        { glow: 'rgba(245, 158, 11, 0.45)', grad1: '#fbbf24', grad2: '#78350f' },
+        { glow: 'rgba(239, 68, 68, 0.45)', grad1: '#f87171', grad2: '#7f1d1d' },
+        { glow: 'rgba(56, 189, 248, 0.45)', grad1: '#38bdf8', grad2: '#0c4a6e' },
+        { glow: 'rgba(236, 72, 153, 0.45)', grad1: '#f472b6', grad2: '#831843' }
       ];
 
-      function generateBottleSVG(index: number) {
-        const t = THEMES[index % THEMES.length];
+      function generateDynamicBottleSVG(shapeType: number, colorIdx: number, uid: string) {
+        const theme = COLOR_THEMES[colorIdx % COLOR_THEMES.length];
+        const gId = `grad-${uid}`;
+
+        let glassPath = '';
+        let liquidPath = '';
+
+        if (shapeType === 0) {
+          glassPath = 'M76 18H104V40C104 40 144 80 144 148C144 218 116 248 90 248C64 248 36 218 36 148C36 80 76 40 76 40V18Z';
+          liquidPath = 'M46 148C46 210 68 238 90 238C112 238 134 210 134 148C134 90 102 58 90 58C78 58 46 90 46 148Z';
+        } else if (shapeType === 1) {
+          glassPath = 'M74 20H106V48L148 202C160 238 136 256 90 256C44 256 20 238 32 202L74 48V20Z';
+          liquidPath = 'M42 200L74 76H106L138 200C148 230 128 246 90 246C52 246 32 230 42 200Z';
+        } else if (shapeType === 2) {
+          glassPath = 'M74 20H106V46L146 98V192L90 254L34 192V98L74 46V20Z';
+          liquidPath = 'M44 104L90 60L136 104V186L90 244L44 186V104Z';
+        } else {
+          glassPath = 'M72 20H108V44C108 44 126 58 126 92V202C126 238 112 254 90 254C68 254 54 238 54 202V92C54 58 72 44 72 44V20Z';
+          liquidPath = 'M62 100C62 76 76 65 90 65C104 65 118 76 118 100V200C118 230 106 244 90 244C74 244 62 230 62 200V100Z';
+        }
+
         return `
-          <svg class="flask-svg" style="--glow-color: ${t.glow}" viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Cork -->
-            <rect x="42" y="8" width="16" height="12" rx="2" fill="#8d5b36" stroke="#451a03" stroke-width="2"/>
-            <!-- Flask Neck & Lip -->
-            <path d="M38 18H62V24C62 24 56 26 56 34V42L78 88C86 104 74 122 50 122C26 122 14 104 22 88L44 42V34C44 26 38 24 38 24V18Z" 
-                  fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.4)" stroke-width="3"/>
-            <!-- Liquid -->
-            <path d="M26 82L44 46H56L74 82C84 100 72 116 50 116C28 116 16 100 26 82Z" fill="url(#grad-${index})"/>
-            <!-- Reflection Highlight -->
-            <path d="M28 80L44 48C44 48 40 56 32 78C30 84 32 94 36 98" stroke="rgba(255, 255, 255, 0.6)" stroke-width="2" stroke-linecap="round"/>
+          <svg class="bottle-svg" style="--bottle-glow: ${theme.glow}" viewBox="0 0 180 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="78" y="8" width="24" height="15" rx="2" fill="#78350f" stroke="#451a03" stroke-width="2"/>
+            <path d="${glassPath}" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.35)" stroke-width="2.5"/>
+            <path d="${liquidPath}" fill="url(#${gId})"/>
+            <path d="M48 185L74 78" stroke="rgba(255, 255, 255, 0.5)" stroke-width="2" stroke-linecap="round"/>
             <defs>
-              <linearGradient id="grad-${index}" x1="50" y1="46" x2="50" y2="116" gradientUnits="userSpaceOnUse">
-                <stop stop-color="${t.grad1}"/>
-                <stop offset="1" stop-color="${t.grad2}"/>
+              <linearGradient id="${gId}" x1="90" y1="50" x2="90" y2="250" gradientUnits="userSpaceOnUse">
+                <stop stop-color="${theme.grad1}"/>
+                <stop offset="1" stop-color="${theme.grad2}"/>
               </linearGradient>
             </defs>
           </svg>
         `;
       }
 
-      // Game Logic & Buffer Queue
+      let difficulty = 'medium';
       let puzzleQueue: any[] = [];
       let currentPuzzle: any = null;
       let isFetching = false;
       let isLocked = false;
       let streak = 0;
-      let bestStreak = parseInt(localStorage.getItem('alchemist_best') || '0', 10);
+      let bestStreak = parseInt(localStorage.getItem('poison_record') || '0', 10);
 
       const shelf = document.getElementById('shelf-content')!;
       const banner = document.getElementById('result-banner')!;
@@ -398,21 +468,35 @@
       const nextBtn = document.getElementById('next-btn')!;
       const currentStreakEl = document.getElementById('current-streak')!;
       const bestStreakEl = document.getElementById('best-streak')!;
+      const diffButtons = document.querySelectorAll('.diff-btn');
 
       bestStreakEl.textContent = bestStreak.toString();
+
+      diffButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const selected = btn.getAttribute('data-diff');
+          if (!selected || selected === difficulty) return;
+          diffButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          difficulty = selected;
+          puzzleQueue = [];
+          currentPuzzle = null;
+          nextRound();
+        });
+      });
 
       async function replenishBuffer() {
         if (isFetching || puzzleQueue.length >= 3) return;
         isFetching = true;
         try {
-          const res = await fetch('/api/generate-puzzle');
+          const res = await fetch(`/api/generate-puzzle?difficulty=${difficulty}&streak=${streak}`);
           const data = await res.json();
           if (data.puzzles?.length) {
             puzzleQueue.push(...data.puzzles);
             if (!currentPuzzle) nextRound();
           }
         } catch (e) {
-          console.error('Alchemist buffer fetch failed', e);
+          console.error('Buffer fetch error', e);
         } finally {
           isFetching = false;
         }
@@ -423,7 +507,7 @@
           shelf.innerHTML = `
             <div class="cauldron-loader">
               <div class="spinner"></div>
-              <span style="font-family: 'Cinzel', serif; color: #a1a1aa;">Distilling draughts...</span>
+              <span style="font-family: 'Cinzel', serif; color: #a1a1aa; font-size: 0.9rem;">Brewing Concoctions...</span>
             </div>
           `;
           replenishBuffer();
@@ -435,22 +519,29 @@
         banner.style.display = 'none';
         nextBtn.style.display = 'none';
 
+        const shapes = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
+        const colors = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random());
+
         shelf.innerHTML = `
-          <div class="bottles-grid">
+          <div class="bottles-row">
             ${currentPuzzle.vials.map((v: any, i: number) => `
-              <div class="vial-card" data-id="${v.id}">
-                ${generateBottleSVG(i)}
-                <div class="vial-id-badge">DRAUGHT ${v.id}</div>
-                <div class="vial-name">${v.name}</div>
-                <div class="inscription-box">"${v.inscription}"</div>
+              <div class="bottle-unit" data-id="${v.id}" style="animation-delay: ${i * 0.08}s">
+                ${generateDynamicBottleSVG(shapes[i % shapes.length], colors[i % colors.length], `${Date.now()}-${i}`)}
+                <div class="parchment-label">
+                  <div class="potion-header">
+                    <span class="potion-id-tag">${v.id}</span>
+                    <span class="potion-title">${v.name}</span>
+                  </div>
+                  <div class="potion-inscription">"${v.inscription}"</div>
+                </div>
               </div>
             `).join('')}
           </div>
         `;
 
-        document.querySelectorAll('.vial-card').forEach(card => {
-          card.addEventListener('click', () => {
-            const selected = card.getAttribute('data-id');
+        document.querySelectorAll('.bottle-unit').forEach(bottle => {
+          bottle.addEventListener('click', () => {
+            const selected = bottle.getAttribute('data-id');
             handleSelection(selected);
           });
         });
@@ -471,14 +562,14 @@
           streak++;
           if (streak > bestStreak) {
             bestStreak = streak;
-            localStorage.setItem('alchemist_best', bestStreak.toString());
+            localStorage.setItem('poison_record', bestStreak.toString());
             bestStreakEl.textContent = bestStreak.toString();
           }
           currentStreakEl.textContent = streak.toString();
 
           banner.className = 'result-banner correct';
           resultTitle.textContent = '✨ POISON NEUTRALIZED!';
-          resultDesc.textContent = `Brilliant deduction. ${currentPuzzle.explanation}`;
+          resultDesc.textContent = `Correct deduction. ${currentPuzzle.explanation}`;
         } else {
           playFailSound();
           streak = 0;
@@ -486,7 +577,7 @@
 
           banner.className = 'result-banner wrong';
           resultTitle.textContent = '☠️ FATAL ERROR!';
-          resultDesc.textContent = `You drank a pure tonic! Draught ${currentPuzzle.poison_id} was the poison.`;
+          resultDesc.textContent = `You consumed pure tonic! Bottle ${currentPuzzle.poison_id} was the poison.`;
         }
 
         banner.style.display = 'block';
