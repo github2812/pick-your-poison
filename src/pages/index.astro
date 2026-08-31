@@ -454,7 +454,6 @@
 		}
 	  
 		let difficulty = 'medium';
-		let puzzleQueue: any[] = [];
 		let currentPuzzle: any = null;
 		let isFetching = false;
 		let isLocked = false;
@@ -479,56 +478,51 @@
 			diffButtons.forEach(b => b.classList.remove('active'));
 			btn.classList.add('active');
 			difficulty = selected;
-			puzzleQueue = [];
-			currentPuzzle = null;
-			nextRound();
+			loadRound();
 		  });
 		});
 	  
-		async function fetchSinglePuzzle() {
-		  try {
-			const res = await fetch(`/api/generate-puzzle?difficulty=${difficulty}&streak=${streak}`);
-			const puzzle = await res.json();
-			if (puzzle && puzzle.vials) {
-			  puzzleQueue.push(puzzle);
-			  if (!currentPuzzle) nextRound();
-			}
-		  } catch (e) {
-			console.error('Fetch error', e);
-		  }
-		}
-	  
-		async function replenishBuffer() {
-		  if (isFetching || puzzleQueue.length >= 2) return;
+		async function loadRound() {
+		  if (isFetching) return;
 		  isFetching = true;
-		  try {
-			await fetchSinglePuzzle();
-		  } finally {
-			isFetching = false;
-			// Pre-fill one more in the background if queue has only 1 item
-			if (puzzleQueue.length < 2) {
-			  fetchSinglePuzzle();
-			}
-		  }
-		}
-	  
-		function nextRound() {
-		  if (puzzleQueue.length === 0) {
-			shelf.innerHTML = `
-			  <div class="cauldron-loader">
-				<div class="spinner"></div>
-				<span style="font-family: 'Cinzel', serif; color: #a1a1aa; font-size: 0.9rem;">Brewing Concoctions...</span>
-			  </div>
-			`;
-			replenishBuffer();
-			return;
-		  }
-	  
-		  currentPuzzle = puzzleQueue.shift();
 		  isLocked = false;
 		  banner.style.display = 'none';
 		  nextBtn.style.display = 'none';
 	  
+		  shelf.innerHTML = `
+			<div class="cauldron-loader">
+			  <div class="spinner"></div>
+			  <span style="font-family: 'Cinzel', serif; color: #a1a1aa; font-size: 0.9rem;">Brewing Concoctions...</span>
+			</div>
+		  `;
+	  
+		  try {
+			const res = await fetch(`/api/generate-puzzle?difficulty=${difficulty}&streak=${streak}`);
+			const data = await res.json();
+	  
+			if (!res.ok || data.error) {
+			  throw new Error(data.error || 'Server error occurred');
+			}
+	  
+			currentPuzzle = data;
+			renderCurrentPuzzle();
+		  } catch (err: any) {
+			console.error('Puzzle load failure:', err);
+			shelf.innerHTML = `
+			  <div class="cauldron-loader" style="gap: 1rem;">
+				<span style="color: #fca5a5; font-size: 0.88rem; max-width: 420px; text-align: center;">
+				  ${err.message.includes('429') ? 'Alchemy cauldron is cooling down (Rate Limit). Please wait 3 seconds and retry.' : err.message}
+				</span>
+				<button id="retry-btn" style="padding: 0.5rem 1.4rem; background: #9333ea; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: 'Cinzel', serif; font-weight: bold;">Retry Distillation</button>
+			  </div>
+			`;
+			document.getElementById('retry-btn')?.addEventListener('click', loadRound);
+		  } finally {
+			isFetching = false;
+		  }
+		}
+	  
+		function renderCurrentPuzzle() {
 		  const shapes = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
 		  const colors = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random());
 	  
@@ -555,8 +549,6 @@
 			  handleSelection(selected);
 			});
 		  });
-	  
-		  replenishBuffer();
 		}
 	  
 		function handleSelection(selectedId: string | null) {
@@ -594,8 +586,8 @@
 		  nextBtn.style.display = 'inline-block';
 		}
 	  
-		nextBtn.addEventListener('click', nextRound);
-		replenishBuffer();
+		nextBtn.addEventListener('click', loadRound);
+		loadRound();
 	  </script>
   </body>
 </html>
