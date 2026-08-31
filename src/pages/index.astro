@@ -375,217 +375,227 @@
     <button id="next-btn">Next Concoction</button>
 
     <script>
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      function playTone(freq: number, type: OscillatorType, duration: number, delay = 0) {
-        setTimeout(() => {
-          try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-          } catch(e) {}
-        }, delay * 1000);
-      }
-
-      function playSuccessSound() {
-        playTone(523.25, 'sine', 0.12, 0);
-        playTone(659.25, 'sine', 0.12, 0.08);
-        playTone(783.99, 'sine', 0.25, 0.16);
-        playTone(1046.50, 'triangle', 0.4, 0.24);
-      }
-
-      function playFailSound() {
-        playTone(311.13, 'sawtooth', 0.2, 0);
-        playTone(293.66, 'sawtooth', 0.3, 0.12);
-        playTone(207.65, 'sawtooth', 0.45, 0.24);
-      }
-
-      const COLOR_THEMES = [
-        { glow: 'rgba(16, 185, 129, 0.45)', grad1: '#34d399', grad2: '#064e3b' },
-        { glow: 'rgba(168, 85, 247, 0.45)', grad1: '#c084fc', grad2: '#581c87' },
-        { glow: 'rgba(245, 158, 11, 0.45)', grad1: '#fbbf24', grad2: '#78350f' },
-        { glow: 'rgba(239, 68, 68, 0.45)', grad1: '#f87171', grad2: '#7f1d1d' },
-        { glow: 'rgba(56, 189, 248, 0.45)', grad1: '#38bdf8', grad2: '#0c4a6e' },
-        { glow: 'rgba(236, 72, 153, 0.45)', grad1: '#f472b6', grad2: '#831843' }
-      ];
-
-      function generateDynamicBottleSVG(shapeType: number, colorIdx: number, uid: string) {
-        const theme = COLOR_THEMES[colorIdx % COLOR_THEMES.length];
-        const gId = `grad-${uid}`;
-
-        let glassPath = '';
-        let liquidPath = '';
-
-        if (shapeType === 0) {
-          glassPath = 'M76 18H104V40C104 40 144 80 144 148C144 218 116 248 90 248C64 248 36 218 36 148C36 80 76 40 76 40V18Z';
-          liquidPath = 'M46 148C46 210 68 238 90 238C112 238 134 210 134 148C134 90 102 58 90 58C78 58 46 90 46 148Z';
-        } else if (shapeType === 1) {
-          glassPath = 'M74 20H106V48L148 202C160 238 136 256 90 256C44 256 20 238 32 202L74 48V20Z';
-          liquidPath = 'M42 200L74 76H106L138 200C148 230 128 246 90 246C52 246 32 230 42 200Z';
-        } else if (shapeType === 2) {
-          glassPath = 'M74 20H106V46L146 98V192L90 254L34 192V98L74 46V20Z';
-          liquidPath = 'M44 104L90 60L136 104V186L90 244L44 186V104Z';
-        } else {
-          glassPath = 'M72 20H108V44C108 44 126 58 126 92V202C126 238 112 254 90 254C68 254 54 238 54 202V92C54 58 72 44 72 44V20Z';
-          liquidPath = 'M62 100C62 76 76 65 90 65C104 65 118 76 118 100V200C118 230 106 244 90 244C74 244 62 230 62 200V100Z';
-        }
-
-        return `
-          <svg class="bottle-svg" style="--bottle-glow: ${theme.glow}" viewBox="0 0 180 270" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="78" y="8" width="24" height="15" rx="2" fill="#78350f" stroke="#451a03" stroke-width="2"/>
-            <path d="${glassPath}" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.35)" stroke-width="2.5"/>
-            <path d="${liquidPath}" fill="url(#${gId})"/>
-            <path d="M48 185L74 78" stroke="rgba(255, 255, 255, 0.5)" stroke-width="2" stroke-linecap="round"/>
-            <defs>
-              <linearGradient id="${gId}" x1="90" y1="50" x2="90" y2="250" gradientUnits="userSpaceOnUse">
-                <stop stop-color="${theme.grad1}"/>
-                <stop offset="1" stop-color="${theme.grad2}"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        `;
-      }
-
-      let difficulty = 'medium';
-      let puzzleQueue: any[] = [];
-      let currentPuzzle: any = null;
-      let isFetching = false;
-      let isLocked = false;
-      let streak = 0;
-      let bestStreak = parseInt(localStorage.getItem('poison_record') || '0', 10);
-
-      const shelf = document.getElementById('shelf-content')!;
-      const banner = document.getElementById('result-banner')!;
-      const resultTitle = document.getElementById('result-title')!;
-      const resultDesc = document.getElementById('result-desc')!;
-      const nextBtn = document.getElementById('next-btn')!;
-      const currentStreakEl = document.getElementById('current-streak')!;
-      const bestStreakEl = document.getElementById('best-streak')!;
-      const diffButtons = document.querySelectorAll('.diff-btn');
-
-      bestStreakEl.textContent = bestStreak.toString();
-
-      diffButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const selected = btn.getAttribute('data-diff');
-          if (!selected || selected === difficulty) return;
-          diffButtons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          difficulty = selected;
-          puzzleQueue = [];
-          currentPuzzle = null;
-          nextRound();
-        });
-      });
-
-      async function replenishBuffer() {
-        if (isFetching || puzzleQueue.length >= 3) return;
-        isFetching = true;
-        try {
-          const res = await fetch(`/api/generate-puzzle?difficulty=${difficulty}&streak=${streak}`);
-          const data = await res.json();
-          if (data.puzzles?.length) {
-            puzzleQueue.push(...data.puzzles);
-            if (!currentPuzzle) nextRound();
-          }
-        } catch (e) {
-          console.error('Buffer fetch error', e);
-        } finally {
-          isFetching = false;
-        }
-      }
-
-      function nextRound() {
-        if (puzzleQueue.length === 0) {
-          shelf.innerHTML = `
-            <div class="cauldron-loader">
-              <div class="spinner"></div>
-              <span style="font-family: 'Cinzel', serif; color: #a1a1aa; font-size: 0.9rem;">Brewing Concoctions...</span>
-            </div>
-          `;
-          replenishBuffer();
-          return;
-        }
-
-        currentPuzzle = puzzleQueue.shift();
-        isLocked = false;
-        banner.style.display = 'none';
-        nextBtn.style.display = 'none';
-
-        const shapes = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
-        const colors = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random());
-
-        shelf.innerHTML = `
-          <div class="bottles-row">
-            ${currentPuzzle.vials.map((v: any, i: number) => `
-              <div class="bottle-unit" data-id="${v.id}" style="animation-delay: ${i * 0.08}s">
-                ${generateDynamicBottleSVG(shapes[i % shapes.length], colors[i % colors.length], `${Date.now()}-${i}`)}
-                <div class="parchment-label">
-                  <div class="potion-header">
-                    <span class="potion-id-tag">${v.id}</span>
-                    <span class="potion-title">${v.name}</span>
-                  </div>
-                  <div class="potion-inscription">"${v.inscription}"</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-
-        document.querySelectorAll('.bottle-unit').forEach(bottle => {
-          bottle.addEventListener('click', () => {
-            const selected = bottle.getAttribute('data-id');
-            handleSelection(selected);
-          });
-        });
-
-        replenishBuffer();
-      }
-
-      function handleSelection(selectedId: string | null) {
-        if (isLocked || !currentPuzzle || !selectedId) return;
-        isLocked = true;
-
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
-        const isCorrect = (selectedId === currentPuzzle.poison_id);
-
-        if (isCorrect) {
-          playSuccessSound();
-          streak++;
-          if (streak > bestStreak) {
-            bestStreak = streak;
-            localStorage.setItem('poison_record', bestStreak.toString());
-            bestStreakEl.textContent = bestStreak.toString();
-          }
-          currentStreakEl.textContent = streak.toString();
-
-          banner.className = 'result-banner correct';
-          resultTitle.textContent = '✨ POISON NEUTRALIZED!';
-          resultDesc.textContent = `Correct deduction. ${currentPuzzle.explanation}`;
-        } else {
-          playFailSound();
-          streak = 0;
-          currentStreakEl.textContent = '0';
-
-          banner.className = 'result-banner wrong';
-          resultTitle.textContent = '☠️ FATAL ERROR!';
-          resultDesc.textContent = `You consumed pure tonic! Bottle ${currentPuzzle.poison_id} was the poison.`;
-        }
-
-        banner.style.display = 'block';
-        nextBtn.style.display = 'inline-block';
-      }
-
-      nextBtn.addEventListener('click', nextRound);
-      replenishBuffer();
-    </script>
+		const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+		
+		function playTone(freq: number, type: OscillatorType, duration: number, delay = 0) {
+		  setTimeout(() => {
+			try {
+			  const osc = audioCtx.createOscillator();
+			  const gain = audioCtx.createGain();
+			  osc.type = type;
+			  osc.frequency.value = freq;
+			  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+			  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+			  osc.connect(gain);
+			  gain.connect(audioCtx.destination);
+			  osc.start();
+			  osc.stop(audioCtx.currentTime + duration);
+			} catch(e) {}
+		  }, delay * 1000);
+		}
+	  
+		function playSuccessSound() {
+		  playTone(523.25, 'sine', 0.12, 0);
+		  playTone(659.25, 'sine', 0.12, 0.08);
+		  playTone(783.99, 'sine', 0.25, 0.16);
+		  playTone(1046.50, 'triangle', 0.4, 0.24);
+		}
+	  
+		function playFailSound() {
+		  playTone(311.13, 'sawtooth', 0.2, 0);
+		  playTone(293.66, 'sawtooth', 0.3, 0.12);
+		  playTone(207.65, 'sawtooth', 0.45, 0.24);
+		}
+	  
+		const COLOR_THEMES = [
+		  { glow: 'rgba(16, 185, 129, 0.45)', grad1: '#34d399', grad2: '#064e3b' },
+		  { glow: 'rgba(168, 85, 247, 0.45)', grad1: '#c084fc', grad2: '#581c87' },
+		  { glow: 'rgba(245, 158, 11, 0.45)', grad1: '#fbbf24', grad2: '#78350f' },
+		  { glow: 'rgba(239, 68, 68, 0.45)', grad1: '#f87171', grad2: '#7f1d1d' },
+		  { glow: 'rgba(56, 189, 248, 0.45)', grad1: '#38bdf8', grad2: '#0c4a6e' },
+		  { glow: 'rgba(236, 72, 153, 0.45)', grad1: '#f472b6', grad2: '#831843' }
+		];
+	  
+		function generateDynamicBottleSVG(shapeType: number, colorIdx: number, uid: string) {
+		  const theme = COLOR_THEMES[colorIdx % COLOR_THEMES.length];
+		  const gId = `grad-${uid}`;
+	  
+		  let glassPath = '';
+		  let liquidPath = '';
+	  
+		  if (shapeType === 0) {
+			glassPath = 'M76 18H104V40C104 40 144 80 144 148C144 218 116 248 90 248C64 248 36 218 36 148C36 80 76 40 76 40V18Z';
+			liquidPath = 'M46 148C46 210 68 238 90 238C112 238 134 210 134 148C134 90 102 58 90 58C78 58 46 90 46 148Z';
+		  } else if (shapeType === 1) {
+			glassPath = 'M74 20H106V48L148 202C160 238 136 256 90 256C44 256 20 238 32 202L74 48V20Z';
+			liquidPath = 'M42 200L74 76H106L138 200C148 230 128 246 90 246C52 246 32 230 42 200Z';
+		  } else if (shapeType === 2) {
+			glassPath = 'M74 20H106V46L146 98V192L90 254L34 192V98L74 46V20Z';
+			liquidPath = 'M44 104L90 60L136 104V186L90 244L44 186V104Z';
+		  } else {
+			glassPath = 'M72 20H108V44C108 44 126 58 126 92V202C126 238 112 254 90 254C68 254 54 238 54 202V92C54 58 72 44 72 44V20Z';
+			liquidPath = 'M62 100C62 76 76 65 90 65C104 65 118 76 118 100V200C118 230 106 244 90 244C74 244 62 230 62 200V100Z';
+		  }
+	  
+		  return `
+			<svg class="bottle-svg" style="--bottle-glow: ${theme.glow}" viewBox="0 0 180 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+			  <rect x="78" y="8" width="24" height="15" rx="2" fill="#78350f" stroke="#451a03" stroke-width="2"/>
+			  <path d="${glassPath}" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.35)" stroke-width="2.5"/>
+			  <path d="${liquidPath}" fill="url(#${gId})"/>
+			  <path d="M48 185L74 78" stroke="rgba(255, 255, 255, 0.5)" stroke-width="2" stroke-linecap="round"/>
+			  <defs>
+				<linearGradient id="${gId}" x1="90" y1="50" x2="90" y2="250" gradientUnits="userSpaceOnUse">
+				  <stop stop-color="${theme.grad1}"/>
+				  <stop offset="1" stop-color="${theme.grad2}"/>
+				</linearGradient>
+			  </defs>
+			</svg>
+		  `;
+		}
+	  
+		let difficulty = 'medium';
+		let puzzleQueue: any[] = [];
+		let currentPuzzle: any = null;
+		let isFetching = false;
+		let isLocked = false;
+		let streak = 0;
+		let bestStreak = parseInt(localStorage.getItem('poison_record') || '0', 10);
+	  
+		const shelf = document.getElementById('shelf-content')!;
+		const banner = document.getElementById('result-banner')!;
+		const resultTitle = document.getElementById('result-title')!;
+		const resultDesc = document.getElementById('result-desc')!;
+		const nextBtn = document.getElementById('next-btn')!;
+		const currentStreakEl = document.getElementById('current-streak')!;
+		const bestStreakEl = document.getElementById('best-streak')!;
+		const diffButtons = document.querySelectorAll('.diff-btn');
+	  
+		bestStreakEl.textContent = bestStreak.toString();
+	  
+		diffButtons.forEach(btn => {
+		  btn.addEventListener('click', () => {
+			const selected = btn.getAttribute('data-diff');
+			if (!selected || selected === difficulty) return;
+			diffButtons.forEach(b => b.classList.remove('active'));
+			btn.classList.add('active');
+			difficulty = selected;
+			puzzleQueue = [];
+			currentPuzzle = null;
+			nextRound();
+		  });
+		});
+	  
+		async function fetchSinglePuzzle() {
+		  try {
+			const res = await fetch(`/api/generate-puzzle?difficulty=${difficulty}&streak=${streak}`);
+			const puzzle = await res.json();
+			if (puzzle && puzzle.vials) {
+			  puzzleQueue.push(puzzle);
+			  if (!currentPuzzle) nextRound();
+			}
+		  } catch (e) {
+			console.error('Fetch error', e);
+		  }
+		}
+	  
+		async function replenishBuffer() {
+		  if (isFetching || puzzleQueue.length >= 2) return;
+		  isFetching = true;
+		  try {
+			await fetchSinglePuzzle();
+		  } finally {
+			isFetching = false;
+			// Pre-fill one more in the background if queue has only 1 item
+			if (puzzleQueue.length < 2) {
+			  fetchSinglePuzzle();
+			}
+		  }
+		}
+	  
+		function nextRound() {
+		  if (puzzleQueue.length === 0) {
+			shelf.innerHTML = `
+			  <div class="cauldron-loader">
+				<div class="spinner"></div>
+				<span style="font-family: 'Cinzel', serif; color: #a1a1aa; font-size: 0.9rem;">Brewing Concoctions...</span>
+			  </div>
+			`;
+			replenishBuffer();
+			return;
+		  }
+	  
+		  currentPuzzle = puzzleQueue.shift();
+		  isLocked = false;
+		  banner.style.display = 'none';
+		  nextBtn.style.display = 'none';
+	  
+		  const shapes = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
+		  const colors = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random());
+	  
+		  shelf.innerHTML = `
+			<div class="bottles-row">
+			  ${currentPuzzle.vials.map((v: any, i: number) => `
+				<div class="bottle-unit" data-id="${v.id}" style="animation-delay: ${i * 0.08}s">
+				  ${generateDynamicBottleSVG(shapes[i % shapes.length], colors[i % colors.length], `${Date.now()}-${i}`)}
+				  <div class="parchment-label">
+					<div class="potion-header">
+					  <span class="potion-id-tag">${v.id}</span>
+					  <span class="potion-title">${v.name}</span>
+					</div>
+					<div class="potion-inscription">"${v.inscription}"</div>
+				  </div>
+				</div>
+			  `).join('')}
+			</div>
+		  `;
+	  
+		  document.querySelectorAll('.bottle-unit').forEach(bottle => {
+			bottle.addEventListener('click', () => {
+			  const selected = bottle.getAttribute('data-id');
+			  handleSelection(selected);
+			});
+		  });
+	  
+		  replenishBuffer();
+		}
+	  
+		function handleSelection(selectedId: string | null) {
+		  if (isLocked || !currentPuzzle || !selectedId) return;
+		  isLocked = true;
+	  
+		  if (audioCtx.state === 'suspended') audioCtx.resume();
+	  
+		  const isCorrect = (selectedId === currentPuzzle.poison_id);
+	  
+		  if (isCorrect) {
+			playSuccessSound();
+			streak++;
+			if (streak > bestStreak) {
+			  bestStreak = streak;
+			  localStorage.setItem('poison_record', bestStreak.toString());
+			  bestStreakEl.textContent = bestStreak.toString();
+			}
+			currentStreakEl.textContent = streak.toString();
+	  
+			banner.className = 'result-banner correct';
+			resultTitle.textContent = '✨ POISON NEUTRALIZED!';
+			resultDesc.textContent = `Correct deduction. ${currentPuzzle.explanation}`;
+		  } else {
+			playFailSound();
+			streak = 0;
+			currentStreakEl.textContent = '0';
+	  
+			banner.className = 'result-banner wrong';
+			resultTitle.textContent = '☠️ FATAL ERROR!';
+			resultDesc.textContent = `You consumed pure tonic! Bottle ${currentPuzzle.poison_id} was the poison.`;
+		  }
+	  
+		  banner.style.display = 'block';
+		  nextBtn.style.display = 'inline-block';
+		}
+	  
+		nextBtn.addEventListener('click', nextRound);
+		replenishBuffer();
+	  </script>
   </body>
 </html>
