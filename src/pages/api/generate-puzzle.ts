@@ -7,33 +7,33 @@ export const GET: APIRoute = async () => {
     const apiKey = env.GEMINI_API_KEY || (globalThis as any).process?.env?.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY secret is not detected by Cloudflare.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Missing GEMINI_API_KEY' }), { status: 500 });
     }
 
     const prompt = `
-You are generating a 3-vial logic puzzle for a game called "Pick Your Poison".
+Generate a batch of 3 distinct, concise logic puzzles for "Pick Your Poison".
 Rules:
-- 3 potion vials: I, II, and III.
+- 3 potion vials: I, II, and III per puzzle.
 - Exactly TWO vials have truthful inscriptions.
 - Exactly ONE vial is the "poison" and has a FALSE inscription (a lie).
-- The puzzle MUST be uniquely solvable.
+- Keep descriptions and inscriptions very short and punchy.
 
-Return ONLY a JSON object matching this schema:
+Return JSON matching:
 {
-  "vials": [
-    { "id": "I", "name": "...", "inscription": "..." },
-    { "id": "II", "name": "...", "inscription": "..." },
-    { "id": "III", "name": "...", "inscription": "..." }
-  ],
-  "poison_id": "I" | "II" | "III",
-  "explanation": "..."
+  "puzzles": [
+    {
+      "vials": [
+        { "id": "I", "name": "...", "inscription": "..." },
+        { "id": "II", "name": "...", "inscription": "..." },
+        { "id": "III", "name": "...", "inscription": "..." }
+      ],
+      "poison_id": "I" | "II" | "III",
+      "explanation": "..."
+    }
+  ]
 }
 `;
 
-    // Updated to gemini-3.6-flash
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
@@ -43,18 +43,11 @@ Return ONLY a JSON object matching this schema:
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: 'application/json',
+            maxOutputTokens: 800,
           },
         }),
       }
     );
-
-    if (!geminiRes.ok) {
-      const errorData = await geminiRes.text();
-      return new Response(
-        JSON.stringify({ error: `Gemini API Error: ${errorData}` }),
-        { status: geminiRes.status, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
 
     const data = await geminiRes.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -64,9 +57,6 @@ Return ONLY a JSON object matching this schema:
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: `Worker Error: ${err.message || err.toString()}` }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 };
