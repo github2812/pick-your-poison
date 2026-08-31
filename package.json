@@ -20,5 +20,8 @@
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260831.1"
   }
 }
