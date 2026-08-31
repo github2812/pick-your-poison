@@ -20,31 +20,30 @@ export const GET: APIRoute = async ({ url }) => {
 
   if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: 'Missing GEMINI_API_KEY binding in Cloudflare environment.' }),
+      JSON.stringify({ error: 'Missing GEMINI_API_KEY secret on Cloudflare.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
-  // Fast, precise logic prompt for a single puzzle
   const prompt = `
-Generate EXACTLY 1 unique, infallible logic puzzle for "Pick Your Poison".
+Generate 1 unique logic puzzle for the game "Pick Your Poison".
 Difficulty: ${difficulty.toUpperCase()} (${vialCount} Vials: ${vialIds}).
 Player Streak: ${streak}.
 
 RULES:
-- Exactly ${vialCount} vials: ${vialIds}.
-- Exactly ONE vial is the "poison" and has a FALSE inscription (a lie).
-- Exactly ${vialCount - 1} vial(s) are safe and have TRUE inscriptions.
-- Randomize which vial is the poison (do NOT favor the last vial).
-- Inscriptions must be under 10 words.
-- The puzzle MUST have exactly ONE logically consistent solution.
+1. Exactly ${vialCount} vials: ${vialIds}.
+2. Exactly ONE vial is the "poison" and has a FALSE inscription (a lie).
+3. Exactly ${vialCount - 1} vial(s) are safe and have TRUE inscriptions.
+4. Randomly pick which vial is the poison from (${vialIds}).
+5. Keep inscriptions short (under 12 words) without nested quotes.
+6. The puzzle MUST have exactly ONE logically consistent solution.
 
-Return ONLY this JSON schema:
+Return ONLY a valid JSON object matching this structure:
 {
   "vials": [
-    ${currentConfig.ids.map(id => `{"id": "${id}", "name": "Thematic Potion Name", "inscription": "Short clue statement"}`).join(',\n    ')}
+    ${currentConfig.ids.map(id => `{"id": "${id}", "name": "Creative Potion Name", "inscription": "Short statement"}`).join(',\n    ')}
   ],
-  "poison_id": "One of: ${vialIds}",
+  "poison_id": "${currentConfig.ids[0]}",
   "explanation": "One short sentence explaining why."
 }
 `;
@@ -59,8 +58,8 @@ Return ONLY this JSON schema:
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: 'application/json',
-            maxOutputTokens: 400, // Keeps generation extremely fast (~1s)
-            temperature: 0.9,
+            maxOutputTokens: 2048,
+            temperature: 0.85,
           },
         }),
       }
@@ -69,15 +68,22 @@ Return ONLY this JSON schema:
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
       return new Response(
-        JSON.stringify({ error: `Gemini API error: ${errText}` }),
+        JSON.stringify({ error: `Gemini API Error (${geminiRes.status}): ${errText}` }),
         { status: geminiRes.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await geminiRes.json();
-    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
+    if (!rawText) {
+      return new Response(
+        JSON.stringify({ error: 'Gemini returned empty candidate output', details: data }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
     const puzzle = JSON.parse(rawText);
 
     return new Response(JSON.stringify(puzzle), {
@@ -85,9 +91,9 @@ Return ONLY this JSON schema:
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
-    console.error('Puzzle gen error:', err);
+    console.error('Puzzle Generation Crash:', err);
     return new Response(
-      JSON.stringify({ error: err.message || 'Failed to distill logic puzzle' }),
+      JSON.stringify({ error: err.message || 'Failed to generate concoction' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
