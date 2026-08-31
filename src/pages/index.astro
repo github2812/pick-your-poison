@@ -27,7 +27,7 @@
         padding: 1.5rem;
         cursor: pointer;
         text-align: center;
-        transition: 0.15s;
+        transition: transform 0.15s, border-color 0.15s;
       }
       .vial:hover { border-color: #a855f7; transform: translateY(-4px); }
       .icon { font-size: 3rem; margin-bottom: 0.5rem; }
@@ -36,9 +36,10 @@
       #feedback { margin-top: 2rem; font-size: 1.2rem; min-height: 2rem; text-align: center; }
       #next-btn {
         margin-top: 1rem;
-        padding: 0.6rem 1.2rem;
+        padding: 0.6rem 1.4rem;
         background: #a855f7;
         color: white;
+        font-weight: bold;
         border: none;
         border-radius: 6px;
         cursor: pointer;
@@ -50,31 +51,48 @@
     <h1>Pick Your Poison</h1>
     <p>Two tonics tell the truth. One bottle lies (the poison). Select the lie!</p>
 
-    <div class="shelf" id="shelf"><p>Brewing potions...</p></div>
+    <div class="shelf" id="shelf"><p>Brewing opening draughts...</p></div>
     <div id="feedback"></div>
     <button id="next-btn">Next Round</button>
 
     <script>
+      let puzzleQueue: any[] = [];
       let currentPuzzle: any = null;
+      let isFetching = false;
+
       const shelf = document.getElementById('shelf')!;
       const feedback = document.getElementById('feedback')!;
       const nextBtn = document.getElementById('next-btn')!;
 
-      async function loadPuzzle() {
-        shelf.innerHTML = '<p>Brewing potions...</p>';
-        feedback.textContent = '';
-        nextBtn.style.display = 'none';
-
+      async function replenishBuffer() {
+        if (isFetching || puzzleQueue.length >= 3) return;
+        isFetching = true;
         try {
           const res = await fetch('/api/generate-puzzle');
-          currentPuzzle = await res.json();
-          render();
-        } catch {
-          feedback.textContent = 'Failed to load puzzle.';
+          const data = await res.json();
+          if (data.puzzles?.length) {
+            puzzleQueue.push(...data.puzzles);
+            // If the board is waiting for its first puzzle, load it immediately
+            if (!currentPuzzle) nextRound();
+          }
+        } catch (e) {
+          console.error('Buffer fetch failed', e);
+        } finally {
+          isFetching = false;
         }
       }
 
-      function render() {
+      function nextRound() {
+        if (puzzleQueue.length === 0) {
+          shelf.innerHTML = '<p>Brewing more draughts...</p>';
+          replenishBuffer();
+          return;
+        }
+
+        currentPuzzle = puzzleQueue.shift();
+        feedback.textContent = '';
+        nextBtn.style.display = 'none';
+
         shelf.innerHTML = currentPuzzle.vials.map((v: any) => `
           <div class="vial" data-id="${v.id}">
             <div class="icon">🧪</div>
@@ -96,10 +114,13 @@
             nextBtn.style.display = 'inline-block';
           });
         });
+
+        // Trigger background fetch if queue gets low
+        replenishBuffer();
       }
 
-      nextBtn.addEventListener('click', loadPuzzle);
-      loadPuzzle();
+      nextBtn.addEventListener('click', nextRound);
+      replenishBuffer();
     </script>
   </body>
 </html>
