@@ -1,17 +1,105 @@
 ---
-
+// src/pages/index.astro
 ---
-
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Pick Your Poison</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 2rem;
+        background: #110e17;
+        color: #e2d9cc;
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .shelf { display: flex; gap: 1.5rem; max-width: 800px; width: 100%; justify-content: center; margin-top: 2rem; }
+      .vial {
+        flex: 1;
+        background: #1e1a26;
+        border: 2px solid #3d354b;
+        border-radius: 12px;
+        padding: 1.5rem;
+        cursor: pointer;
+        text-align: center;
+        transition: 0.15s;
+      }
+      .vial:hover { border-color: #a855f7; transform: translateY(-4px); }
+      .icon { font-size: 3rem; margin-bottom: 0.5rem; }
+      .name { font-weight: bold; margin-bottom: 0.5rem; color: #f3e8ff; }
+      .text { font-style: italic; color: #d1d5db; }
+      #feedback { margin-top: 2rem; font-size: 1.2rem; min-height: 2rem; text-align: center; }
+      #next-btn {
+        margin-top: 1rem;
+        padding: 0.6rem 1.2rem;
+        background: #a855f7;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pick Your Poison</h1>
+    <p>Two tonics tell the truth. One bottle lies (the poison). Select the lie!</p>
+
+    <div class="shelf" id="shelf"><p>Brewing potions...</p></div>
+    <div id="feedback"></div>
+    <button id="next-btn">Next Round</button>
+
+    <script>
+      let currentPuzzle: any = null;
+      const shelf = document.getElementById('shelf')!;
+      const feedback = document.getElementById('feedback')!;
+      const nextBtn = document.getElementById('next-btn')!;
+
+      async function loadPuzzle() {
+        shelf.innerHTML = '<p>Brewing potions...</p>';
+        feedback.textContent = '';
+        nextBtn.style.display = 'none';
+
+        try {
+          const res = await fetch('/api/generate-puzzle');
+          currentPuzzle = await res.json();
+          render();
+        } catch {
+          feedback.textContent = 'Failed to load puzzle.';
+        }
+      }
+
+      function render() {
+        shelf.innerHTML = currentPuzzle.vials.map((v: any) => `
+          <div class="vial" data-id="${v.id}">
+            <div class="icon">🧪</div>
+            <div class="name">${v.name} (${v.id})</div>
+            <div class="text">"${v.inscription}"</div>
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.vial').forEach(v => {
+          v.addEventListener('click', () => {
+            const selected = v.getAttribute('data-id');
+            if (selected === currentPuzzle.poison_id) {
+              feedback.textContent = `Correct! ${currentPuzzle.explanation}`;
+              feedback.style.color = '#4ade80';
+            } else {
+              feedback.textContent = `Poisoned! The lie was ${currentPuzzle.poison_id}.`;
+              feedback.style.color = '#f87171';
+            }
+            nextBtn.style.display = 'inline-block';
+          });
+        });
+      }
+
+      nextBtn.addEventListener('click', loadPuzzle);
+      loadPuzzle();
+    </script>
+  </body>
 </html>

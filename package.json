@@ -9,10 +9,14 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "generate-types": "wrangler types"
   },
   "dependencies": {
-    "astro": "^7.2.9"
+    "@astrojs/cloudflare": "^14.2.5",
+    "@google/genai": "^2.19.0",
+    "astro": "^7.2.9",
+    "wrangler": "^4.127.1"
   },
   "allowScripts": {
     "esbuild": true
